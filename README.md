@@ -1,3 +1,14 @@
+# learn_rust - OKX API 历史持仓查询工具
+
+这个仓库包含了学习Rust编程的项目，其中主要项目是一个用Rust编写的OKX API调用工具，用于查询历史持仓信息。
+
+## 项目内容
+
+- **OKX API客户端**: 一个完整的Rust项目，用于查询OKX交易所的历史持仓信息
+- **其他Rust学习项目**: 包含基础的Rust学习示例
+
+---
+
 # OKX API 历史持仓查询工具
 
 这是一个用Rust编写的OKX API调用工具，用于查询历史持仓信息。
@@ -149,4 +160,4 @@ src/
 
 ## 许可证
 
-MIT License 
+MIT License

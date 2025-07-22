@@ -82,4 +82,4 @@ settings.local.*
 
 # Test artifacts
 test-results/
-coverage/ 
+coverage/
