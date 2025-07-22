@@ -4,20 +4,21 @@
 
 ## 项目内容
 
-- **OKX API客户端**: 一个完整的Rust项目，用于查询OKX交易所的历史持仓信息
+- **OKX API客户端**: 一个完整的Rust项目，用于查询OKX交易所的历史持仓信息和当前持仓信息
 - **其他Rust学习项目**: 包含基础的Rust学习示例
 
 ---
 
-# OKX API 历史持仓查询工具
+# OKX API 持仓查询工具
 
-这是一个用Rust编写的OKX API调用工具，用于查询历史持仓信息。
+这是一个用Rust编写的OKX API调用工具，用于查询历史持仓信息和当前持仓信息。
 
 ## 功能特性
 
-- 查询最近3个月有更新的仓位信息
+- 查询最近3个月有更新的历史仓位信息
+- 查询当前持仓信息
 - 按照仓位更新时间倒序排列
-- 支持组合保证金账户模式下的历史持仓查询
+- 支持组合保证金账户模式下的持仓查询
 - 内置限速功能（10次/2秒）
 - 支持多种查询参数过滤
 
@@ -51,38 +52,61 @@ cargo build --release
 
 ## 使用方法
 
-### 基本查询
+### 查询当前持仓信息
+```bash
+# 查询所有当前持仓
+cargo run -- positions
+
+# 查询指定产品类型的当前持仓
+cargo run -- positions --inst-type SWAP
+
+# 查询指定交易对的当前持仓
+cargo run -- positions --inst-id BTC-USD-SWAP
+
+# 查询指定持仓ID的当前持仓
+cargo run -- positions --pos-id 123456789
+```
+
+### 查询历史持仓信息
 ```bash
 # 查询所有历史持仓
-cargo run
+cargo run -- history
 
 # 查询指定产品类型的历史持仓
-cargo run -- --inst-type SWAP
+cargo run -- history --inst-type SWAP
 
 # 查询指定交易对的历史持仓
-cargo run -- --inst-id BTC-USD-SWAP
+cargo run -- history --inst-id BTC-USD-SWAP
 
 # 查询指定保证金模式的历史持仓
-cargo run -- --mgn-mode cross
+cargo run -- history --mgn-mode cross
 ```
 
 ### 高级查询
 ```bash
 # 查询最近3个月的历史持仓，限制返回50条
-cargo run -- --limit 50
+cargo run -- history --limit 50
 
 # 查询指定时间范围的历史持仓
-cargo run -- --after 1640995200000 --before 1643673600000
+cargo run -- history --after 1640995200000 --before 1643673600000
 
 # 查询指定平仓类型的历史持仓
-cargo run -- --close-type 2  # 2表示完全平仓
+cargo run -- history --close-type 2  # 2表示完全平仓
 
 # 查询指定持仓ID的历史记录
-cargo run -- --pos-id 123456789
+cargo run -- history --pos-id 123456789
 ```
 
 ### 参数说明
 
+#### 当前持仓查询参数
+| 参数 | 类型 | 描述 |
+|------|------|------|
+| `--inst-type` | String | 产品类型 (MARGIN, SWAP, FUTURES, OPTION) |
+| `--inst-id` | String | 交易产品ID，如：BTC-USD-SWAP |
+| `--pos-id` | String | 持仓ID |
+
+#### 历史持仓查询参数
 | 参数 | 类型 | 描述 |
 |------|------|------|
 | `--inst-type` | String | 产品类型 (MARGIN, SWAP, FUTURES, OPTION) |
@@ -111,6 +135,25 @@ cargo run -- --pos-id 123456789
 
 ## 响应数据
 
+### 当前持仓数据
+查询成功后会返回JSON格式的当前持仓数据，包含以下主要字段：
+
+- `inst_type`: 产品类型
+- `inst_id`: 交易产品ID
+- `pos_id`: 持仓ID
+- `pos_side`: 持仓方向
+- `pos`: 持仓数量
+- `avg_px`: 开仓平均价
+- `upl`: 未实现收益
+- `upl_ratio`: 未实现收益率
+- `mark_px`: 标记价格
+- `last_px`: 最新成交价
+- `pos_value`: 持仓价值
+- `margin`: 保证金
+- `mgn_ratio`: 保证金率
+- `liq_px`: 强平价格
+
+### 历史持仓数据
 查询成功后会返回JSON格式的历史持仓数据，包含以下主要字段：
 
 - `inst_type`: 产品类型
@@ -143,6 +186,7 @@ src/
 ├── config.rs            # 配置管理
 ├── types.rs             # 数据类型定义
 ├── rate_limiter.rs      # 限速器
+├── positions.rs         # 当前持仓API
 └── positions_history.rs # 历史持仓API
 ```
 
