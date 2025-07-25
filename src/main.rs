@@ -1,5 +1,6 @@
 use clap::{App, Arg, SubCommand};
 use okx_api_client::{
+    account::{get_account_balance, get_account_balance_by_currency, get_account_config},
     config::Config,
     positions::get_positions,
     positions_history::{get_positions_history, PositionsHistoryParams},
@@ -104,6 +105,25 @@ fn main() -> anyhow::Result<()> {
                             .takes_value(true),
                     ),
             )
+            .subcommand(
+                SubCommand::with_name("account")
+                    .about("查询账户信息")
+                    .subcommand(
+                        SubCommand::with_name("balance")
+                            .about("查询账户余额")
+                            .arg(
+                                Arg::new("ccy")
+                                    .short('c')
+                                    .long("ccy")
+                                    .help("币种，如：BTC, ETH")
+                                    .takes_value(true),
+                            ),
+                    )
+                    .subcommand(
+                        SubCommand::with_name("config")
+                            .about("查询账户配置"),
+                    ),
+            )
             .get_matches();
 
         // 加载配置
@@ -159,10 +179,67 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             }
+            Some(("account", sub_matches)) => {
+                match sub_matches.subcommand() {
+                    Some(("balance", balance_matches)) => {
+                        println!("开始查询账户余额...");
+                        
+                        match balance_matches.value_of("ccy") {
+                            Some(ccy) => {
+                                // 查询指定币种余额
+                                match get_account_balance_by_currency(&config, ccy).await {
+                                    Ok(response) => {
+                                        println!("查询成功！");
+                                        println!("响应数据: {}", serde_json::to_string_pretty(&response)?);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("查询失败: {}", e);
+                                        std::process::exit(1);
+                                    }
+                                }
+                            }
+                            None => {
+                                // 查询所有币种余额
+                                match get_account_balance(&config).await {
+                                    Ok(response) => {
+                                        println!("查询成功！");
+                                        println!("响应数据: {}", serde_json::to_string_pretty(&response)?);
+                                    }
+                                    Err(e) => {
+                                        eprintln!("查询失败: {}", e);
+                                        std::process::exit(1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Some(("config", _)) => {
+                        println!("开始查询账户配置...");
+                        
+                        match get_account_config(&config).await {
+                            Ok(response) => {
+                                println!("查询成功！");
+                                println!("响应数据: {}", serde_json::to_string_pretty(&response)?);
+                            }
+                            Err(e) => {
+                                eprintln!("查询失败: {}", e);
+                                std::process::exit(1);
+                            }
+                        }
+                    }
+                    _ => {
+                        println!("请指定要执行的账户查询命令:");
+                        println!("  balance  - 查询账户余额");
+                        println!("  config   - 查询账户配置");
+                        println!("\n使用 --help 查看详细帮助信息");
+                    }
+                }
+            }
             _ => {
                 println!("请指定要执行的命令:");
-                println!("  history    - 查询历史持仓信息");
-                println!("  positions  - 查询当前持仓信息");
+                println!("  history   - 查询历史持仓信息");
+                println!("  positions - 查询当前持仓信息");
+                println!("  account   - 查询账户信息");
                 println!("\n使用 --help 查看详细帮助信息");
             }
         }

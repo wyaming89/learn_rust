@@ -1,14 +1,10 @@
-use anyhow::{anyhow, Result};
-use reqwest::Client;
+use anyhow::Result;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::time::Duration;
-use hmac::{Hmac, Mac, NewMac};
-use sha2::Sha256;
 
 use crate::{
+    client::OkxClient,
     config::Config,
-    rate_limiter::RateLimiter,
     types::{ApiResponse, PositionHistory},
 };
 
@@ -57,115 +53,46 @@ impl PositionsHistoryParams {
     }
 }
 
-pub struct PositionsHistoryClient {
-    client: Client,
-    config: Config,
-    rate_limiter: RateLimiter,
-}
-
-impl PositionsHistoryClient {
-    pub fn new(config: Config) -> Self {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .expect("Failed to create HTTP client");
-
-        Self {
-            client,
-            config,
-            rate_limiter: RateLimiter::default(),
-        }
-    }
-
-    pub async fn get_positions_history(&self, params: &PositionsHistoryParams) -> Result<ApiResponse<PositionHistory>> {
-        // 检查限速
-        self.rate_limiter.wait_if_needed(&self.config.api_key)?;
-
-        // 构建URL
-        let url = format!("{}/api/v5/account/positions-history", self.config.base_url);
-        
-        // 构建查询参数
-        let query_params = params.to_query_params();
-        
-        // 发送请求
-        let timestamp = self.get_timestamp().await?;
-        let signature = self.generate_signature(&query_params, &timestamp)?;
-        
-        let response = self.client
-            .get(&url)
-            .query(&query_params)
-            .header("OK-ACCESS-KEY", &self.config.api_key)
-            .header("OK-ACCESS-SIGN", signature)
-            .header("OK-ACCESS-TIMESTAMP", timestamp)
-            .header("OK-ACCESS-PASSPHRASE", &self.config.passphrase)
-            .header("Content-Type", "application/json")
-            .send()
-            .await?;
-
-        let status = response.status();
-        if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| "无法读取错误信息".to_string());
-            return Err(anyhow!("HTTP错误: {} - {}", status, error_text));
-        }
-
-        // 解析JSON响应
-        let api_response: ApiResponse<PositionHistory> = response.json().await?;
-        
-        if api_response.code != "0" {
-            return Err(anyhow!("API错误: {} - {}", api_response.code, api_response.msg));
-        }
-
-        Ok(api_response)
-    }
-
-    fn generate_signature(&self, params: &HashMap<String, String>, timestamp: &str) -> Result<String> {
-        let method = "GET";
-        let request_path = "/api/v5/account/positions-history";
-        
-        // 构建签名字符串
-        let mut sign_string = timestamp.to_string() + method + request_path;
-        
-        // 添加查询参数
-        if !params.is_empty() {
-            let mut sorted_params: Vec<_> = params.iter().collect();
-            sorted_params.sort_by_key(|&(k, _)| k);
-            
-            let query_string = sorted_params
-                .iter()
-                .map(|(k, v)| format!("{}={}", k, v))
-                .collect::<Vec<_>>()
-                .join("&");
-            
-            sign_string += "?";
-            sign_string += &query_string;
-        }
-        
-        // 使用HMAC-SHA256生成签名
-        let mut mac = Hmac::<Sha256>::new_from_slice(self.config.secret_key.as_bytes())
-            .map_err(|e| anyhow!("HMAC初始化失败: {}", e))?;
-        
-        mac.update(sign_string.as_bytes());
-        let result = mac.finalize();
-        
-
-        
-        Ok(base64::encode(result.into_bytes()))
-    }
-
-    async fn get_timestamp(&self) -> Result<String> {
-        // 使用ISO 8601格式的时间戳，如：2020-12-08T09:08:57.715Z
-        use chrono::Utc;
-        let utc_now = Utc::now();
-        // 格式化为ISO 8601格式，包含毫秒
-        let timestamp = utc_now.format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string();
-        Ok(timestamp)
-    }
-}
-
+/// 获取历史持仓信息
 pub async fn get_positions_history(
     config: &Config,
     params: &PositionsHistoryParams,
 ) -> Result<ApiResponse<PositionHistory>> {
-    let client = PositionsHistoryClient::new(config.clone());
-    client.get_positions_history(params).await
+    let client = OkxClient::new(config.clone());
+    
+    // 构建查询参数
+    let query_params = params.to_query_params();
+    
+    // 执行API请求
+    let response: ApiResponse<PositionHistory> = client
+        .get("/api/v5/account/positions-history", Some(&query_params))
+        .await?;
+
+    Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_positions_history_params_serialization() {
+        let params = PositionsHistoryParams {
+            inst_type: Some("SWAP".to_string()),
+            inst_id: Some("BTC-USD-SWAP".to_string()),
+            mgn_mode: Some("cross".to_string()),
+            close_type: Some("2".to_string()),
+            pos_id: None,
+            before: None,
+            after: None,
+            limit: Some("50".to_string()),
+        };
+
+        let query_params = params.to_query_params();
+        assert_eq!(query_params.get("instType"), Some(&"SWAP".to_string()));
+        assert_eq!(query_params.get("instId"), Some(&"BTC-USD-SWAP".to_string()));
+        assert_eq!(query_params.get("mgnMode"), Some(&"cross".to_string()));
+        assert_eq!(query_params.get("type"), Some(&"2".to_string()));
+        assert_eq!(query_params.get("limit"), Some(&"50".to_string()));
+    }
 } 
