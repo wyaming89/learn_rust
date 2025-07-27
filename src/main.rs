@@ -2,7 +2,7 @@ use clap::{App, Arg, SubCommand};
 use okx_api_client::{
     account::{get_account_balance, get_account_balance_by_currency, get_account_config},
     config::Config,
-    positions::get_positions,
+    positions::{get_positions, get_positions_simplified},
     positions_history::{get_positions_history, PositionsHistoryParams},
     types::PositionsParams,
 };
@@ -103,6 +103,21 @@ fn main() -> anyhow::Result<()> {
                             .long("pos-id")
                             .help("持仓ID")
                             .takes_value(true),
+                    )
+                    .arg(
+                        Arg::new("simple")
+                            .short('s')
+                            .long("simple")
+                            .help("使用简化输出格式")
+                            .takes_value(false),
+                    )
+                    .arg(
+                        Arg::new("format")
+                            .short('f')
+                            .long("format")
+                            .help("输出格式 (json, table)")
+                            .default_value("json")
+                            .takes_value(true),
                     ),
             )
             .subcommand(
@@ -167,15 +182,49 @@ fn main() -> anyhow::Result<()> {
                     pos_id: sub_matches.value_of("pos_id").map(|s| s.to_string()),
                 };
 
-                // 调用API
-                match get_positions(&config, &params).await {
-                    Ok(response) => {
-                        println!("查询成功！");
-                        println!("响应数据: {}", serde_json::to_string_pretty(&response)?);
+                let is_simple = sub_matches.is_present("simple");
+                let format = sub_matches.value_of("format").unwrap_or("json");
+
+                if is_simple {
+                    // 使用简化输出
+                    match get_positions_simplified(&config, &params).await {
+                        Ok(positions) => {
+                            println!("查询成功！");
+                            println!("找到 {} 个持仓", positions.len());
+                            
+                            if format == "table" {
+                                // 表格格式输出
+                                println!("\n{:<10} | {:<6} | {:<8} | {:<12} | {:<12} | {:<12} | {:<8}", 
+                                    "Pair", "Side", "Pos", "AvgPx", "MarkPx", "UPL", "UPLRatio");
+                                println!("{:-<80}", "");
+                                for pos in positions {
+                                    println!("{}", pos.format_display());
+                                }
+                            } else {
+                                // JSON格式输出
+                                let json_array: Vec<serde_json::Value> = positions
+                                    .iter()
+                                    .map(|pos| pos.to_json())
+                                    .collect();
+                                println!("{}", serde_json::to_string_pretty(&json_array)?);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("查询失败: {}", e);
+                            std::process::exit(1);
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("查询失败: {}", e);
-                        std::process::exit(1);
+                } else {
+                    // 使用完整输出
+                    match get_positions(&config, &params).await {
+                        Ok(response) => {
+                            println!("查询成功！");
+                            println!("响应数据: {}", serde_json::to_string_pretty(&response)?);
+                        }
+                        Err(e) => {
+                            eprintln!("查询失败: {}", e);
+                            std::process::exit(1);
+                        }
                     }
                 }
             }
