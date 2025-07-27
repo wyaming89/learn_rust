@@ -115,36 +115,36 @@ pub struct Position {
     pub mark_px: String,
     /// 最新成交价
     #[serde(rename = "lastPx")]
-    pub last_px: String,
+    pub last_px: Option<String>,
     /// 最新成交价时间
     #[serde(rename = "lastPxTime")]
-    pub last_px_time: String,
+    pub last_px_time: Option<String>,
     /// 持仓价值
     #[serde(rename = "posValue")]
-    pub pos_value: String,
+    pub pos_value: Option<String>,
     /// 保证金
-    pub margin: String,
+    pub margin: Option<String>,
     /// 保证金率
     #[serde(rename = "mgnRatio")]
-    pub mgn_ratio: String,
+    pub mgn_ratio: Option<String>,
     /// 维持保证金率
     #[serde(rename = "maintMarginRatio")]
-    pub maint_margin_ratio: String,
+    pub maint_margin_ratio: Option<String>,
     /// 强平价格
     #[serde(rename = "liqPx")]
-    pub liq_px: String,
+    pub liq_px: Option<String>,
     /// 利息
-    pub interest: String,
+    pub interest: Option<String>,
     /// 资金费用
     #[serde(rename = "fundingFee")]
-    pub funding_fee: String,
+    pub funding_fee: Option<String>,
     /// 资金费用时间
     #[serde(rename = "fundingTime")]
-    pub funding_time: String,
+    pub funding_time: Option<String>,
     /// 方向
-    pub direction: String,
+    pub direction: Option<String>,
     /// 币种
-    pub ccy: String,
+    pub ccy: Option<String>,
     /// 持仓时间
     #[serde(rename = "cTime")]
     pub c_time: String,
@@ -152,7 +152,7 @@ pub struct Position {
     #[serde(rename = "uTime")]
     pub u_time: String,
     /// 标的
-    pub uly: String,
+    pub uly: Option<String>,
     /// 期权价值
     #[serde(rename = "optVal")]
     pub opt_val: Option<String>,

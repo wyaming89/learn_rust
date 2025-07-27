@@ -11,18 +11,18 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountBalance {
     /// 币种
-    pub ccy: String,
+    pub ccy: Option<String>,
     /// 可用余额
     #[serde(rename = "availBal")]
-    pub avail_bal: String,
+    pub avail_bal: Option<String>,
     /// 余额
-    pub bal: String,
+    pub bal: Option<String>,
     /// 冻结余额
     #[serde(rename = "frozenBal")]
-    pub frozen_bal: String,
+    pub frozen_bal: Option<String>,
     /// 账户类型
     #[serde(rename = "acctType")]
-    pub acct_type: String,
+    pub acct_type: Option<String>,
 }
 
 /// 账户配置信息
@@ -30,21 +30,21 @@ pub struct AccountBalance {
 pub struct AccountConfig {
     /// 账户ID
     #[serde(rename = "acctId")]
-    pub acct_id: String,
+    pub acct_id: Option<String>,
     /// 账户类型
     #[serde(rename = "acctType")]
-    pub acct_type: String,
+    pub acct_type: Option<String>,
     /// 币种
-    pub ccy: String,
+    pub ccy: Option<String>,
     /// 是否支持交易
     #[serde(rename = "tradingEnabled")]
-    pub trading_enabled: bool,
+    pub trading_enabled: Option<bool>,
     /// 是否支持提现
     #[serde(rename = "withdrawEnabled")]
-    pub withdraw_enabled: bool,
+    pub withdraw_enabled: Option<bool>,
     /// 是否支持充值
     #[serde(rename = "depositEnabled")]
-    pub deposit_enabled: bool,
+    pub deposit_enabled: Option<bool>,
 }
 
 /// 获取账户余额
@@ -105,11 +105,11 @@ mod tests {
         }"#;
 
         let balance: AccountBalance = serde_json::from_str(json).unwrap();
-        assert_eq!(balance.ccy, "BTC");
-        assert_eq!(balance.avail_bal, "1.0");
-        assert_eq!(balance.bal, "1.5");
-        assert_eq!(balance.frozen_bal, "0.5");
-        assert_eq!(balance.acct_type, "18");
+        assert_eq!(balance.ccy, Some("BTC".to_string()));
+        assert_eq!(balance.avail_bal, Some("1.0".to_string()));
+        assert_eq!(balance.bal, Some("1.5".to_string()));
+        assert_eq!(balance.frozen_bal, Some("0.5".to_string()));
+        assert_eq!(balance.acct_type, Some("18".to_string()));
     }
 
     #[test]
@@ -124,11 +124,11 @@ mod tests {
         }"#;
 
         let config: AccountConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(config.acct_id, "123456");
-        assert_eq!(config.acct_type, "18");
-        assert_eq!(config.ccy, "BTC");
-        assert!(config.trading_enabled);
-        assert!(config.withdraw_enabled);
-        assert!(config.deposit_enabled);
+        assert_eq!(config.acct_id, Some("123456".to_string()));
+        assert_eq!(config.acct_type, Some("18".to_string()));
+        assert_eq!(config.ccy, Some("BTC".to_string()));
+        assert_eq!(config.trading_enabled, Some(true));
+        assert_eq!(config.withdraw_enabled, Some(true));
+        assert_eq!(config.deposit_enabled, Some(true));
     }
 } 

@@ -165,10 +165,12 @@ impl OkxClient {
 
     /// 获取时间戳
     async fn get_timestamp(&self) -> Result<String> {
-        // 使用ISO 8601格式的时间戳
+        // 使用ISO 8601格式的时间戳，如：2020-12-08T09:08:57.715Z
         use chrono::Utc;
         let utc_now = Utc::now();
-        Ok(utc_now.to_rfc3339())
+        // 格式化为ISO 8601格式，包含毫秒
+        let timestamp = utc_now.format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string();
+        Ok(timestamp)
     }
 }
 
